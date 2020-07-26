@@ -1,0 +1,3 @@
+class CounterIncrementAction {}
+
+class CounterDecrementAction {}
