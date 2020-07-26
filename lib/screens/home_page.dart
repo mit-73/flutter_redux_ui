@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux_ui/actions/counter_actions.dart';
 import 'package:redux_ui/redux/app_state.dart';
-import 'package:redux_ui/redux/base_view_model.dart';
+import 'package:redux_ui/screens/base_view_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key key}) : super(key: key);
