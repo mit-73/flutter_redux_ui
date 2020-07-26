@@ -7,9 +7,11 @@ final Reducer<int> counterReducer = combineReducers([
 ]);
 
 int _increment(int counter, CounterIncrementAction action) {
+  print("_increment: $counter");
   return ++counter;
 }
 
 int _decrement(int counter, CounterDecrementAction action) {
+  print("_decrement: $counter");
   return --counter;
 }
