@@ -1,18 +1,12 @@
+import 'package:redux_ui/_lib/redux_ui.dart';
+
 class AppState {
-  final int counter;
+  final List<ReduxUIStateModel> stateModels;
 
   AppState({
-    this.counter = 0,
+    this.stateModels = const <ReduxUIStateModel>[],
   });
 
   @override
-  String toString() => 'AppState(counter: $counter)';
-
-  AppState copyWith({
-    int counter,
-  }) {
-    return AppState(
-      counter: counter ?? this.counter,
-    );
-  }
+  String toString() => 'AppState(stateModels: $stateModels)';
 }

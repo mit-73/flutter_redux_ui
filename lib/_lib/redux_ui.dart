@@ -1,50 +1,123 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 
-class ReduxUI<S> {
-  static Middleware<S> createMiddleware<S>() => _createCompactMiddleware();
-
-  static Reducer<S> createReducer<S>() => _ReduxUIReducer<S>().createReducer();
+@immutable
+class ReduxUI<State> {
+  static Reducer<List<ReduxUIStateModel>> createStateModelsReducer() {
+    return combineReducers<List<ReduxUIStateModel>>([
+      TypedReducer<List<ReduxUIStateModel>, _AddModelAction>(
+        (models, action) => [...models, action.stateModel],
+      ),
+      TypedReducer<List<ReduxUIStateModel>, _UpdateModelAction>(
+        (models, action) {
+          return [...models]
+            ..removeWhere((model) => model.id == action.stateModel.id)
+            ..add(action.stateModel);
+        },
+      ),
+      TypedReducer<List<ReduxUIStateModel>, _RemoveModelAction>(
+        (models, action) => [...models]
+          ..removeWhere((model) => model.id == action.stateModel.id),
+      ),
+      TypedReducer<List<ReduxUIStateModel>, _ClearModelsAction>(
+        (models, action) => [],
+      ),
+    ]);
+  }
 }
 
-abstract class ReduxUIAction<S> {
-  Store<S> _store;
+// -------------------------------------------- //
 
-  Store<S> get store => _store;
+@immutable
+abstract class ReduxUIModel {}
 
-  S get state => _store.state;
+@immutable
+class ReduxUIViewModel<State, Model extends ReduxUIModel> {
+  final List<ReduxUIStateModel> Function(State) _supervisor;
+  final ReduxUIStateModel _stateModel;
+  final Store<State> store;
 
-  /// The action reducer
-  S reduce();
+  ReduxUIViewModel({
+    @required BuildContext context,
+    @required ReduxUIModel model,
+    @required List<ReduxUIStateModel> Function(State) supervisor,
+  })  : assert(context != null),
+        assert(model != null),
+        assert(supervisor != null),
+        _supervisor = supervisor,
+        _stateModel = ReduxUIStateModel(id: model.hashCode, model: model),
+        store = StoreProvider.of<State>(context) {
+    _init();
+  }
 
-  /// Runs before `reduce()`.
-  void before() {}
+  @nonVirtual
+  Model get model {
+    print(store.state);
+    return _supervisor(store.state)
+        .firstWhere((m) => m.id == _stateModel.id)
+        .model;
+  }
 
-  /// Runs after `reduce()`.
-  void after() {}
+  void _init() {
+    store.dispatch(_AddModelAction(_stateModel));
+  }
 
-  void _setStore(Store store) => _store = (store as Store<S>);
+  @nonVirtual
+  void dispose() {
+    store.dispatch(_RemoveModelAction(_stateModel));
+  }
+
+  @protected
+  @nonVirtual
+  void update(Model model) {
+    store.dispatch(_UpdateModelAction(_stateModel.copyWith(model: model)));
+  }
 }
 
-class _ReduxUIReducer<S> {
-  Reducer<S> createReducer() => combineReducers<S>([
-        TypedReducer<S, ReduxUIAction>(_handleAction),
-      ]);
+// -------------------------------------------- //
 
-  S _handleAction(S state, ReduxUIAction action) => action.reduce();
+@immutable
+class ReduxUIStateModel {
+  final int id;
+  final ReduxUIModel model;
+
+  ReduxUIStateModel({
+    this.id,
+    this.model,
+  });
+
+  ReduxUIStateModel copyWith({
+    int id,
+    ReduxUIModel model,
+  }) {
+    return ReduxUIStateModel(
+      id: id ?? this.id,
+      model: model ?? this.model,
+    );
+  }
+
+  @override
+  String toString() => 'ReduxUIStateModel(id: $id, model: $model)';
 }
 
-Middleware<S> _createCompactMiddleware<S>() {
-  return (Store<S> store, dynamic action, NextDispatcher next) async {
-    if (action is ReduxUIAction) {
-      action._setStore(store);
+class _AddModelAction {
+  final ReduxUIStateModel stateModel;
 
-      action.before();
-
-      next(action);
-
-      action.after();
-    } else {
-      next(action);
-    }
-  };
+  _AddModelAction(this.stateModel);
 }
+
+class _UpdateModelAction {
+  final ReduxUIStateModel stateModel;
+
+  _UpdateModelAction(this.stateModel);
+}
+
+class _RemoveModelAction {
+  final ReduxUIStateModel stateModel;
+
+  _RemoveModelAction(this.stateModel);
+}
+
+class _ClearModelsAction {}
