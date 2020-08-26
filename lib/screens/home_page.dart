@@ -16,9 +16,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      viewModel = _ViewModel(context);
-    });
+    viewModel = _ViewModel(context);
 
     super.initState();
   }
@@ -32,34 +30,38 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return StoreConnector<AppState, _Model>(
-      distinct: true,
-      converter: (store) => viewModel.model,
-      builder: (context, model) {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        StoreObserver(
+          viewModel: viewModel,
+          builder: (context, model) => Text(
+            '${model.counter}',
+            style: Theme.of(context).textTheme.headline4,
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            Text(
-              '${model.counter}',
-              style: Theme.of(context).textTheme.headline4,
+            RaisedButton(
+              child: Text("+"),
+              onPressed: viewModel.increment,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                RaisedButton(
-                  child: Text("+"),
-                  onPressed: viewModel.increment,
-                ),
-                RaisedButton(
-                  child: Text("-"),
-                  onPressed: viewModel.decrement,
-                ),
-              ],
+            RaisedButton(
+              child: Text("-"),
+              onPressed: viewModel.decrement,
             ),
           ],
-        );
-      },
+        ),
+        StoreObserver(
+          viewModel: viewModel,
+          builder: (context, model) => Text(
+            '${model.counter}',
+            style: Theme.of(context).textTheme.headline4,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -80,7 +82,7 @@ class _Model extends ReduxUIModel {
   }
 
   @override
-  String toString() => '_Model(counter: $counter)';
+  int get hashCode => counter.hashCode;
 
   @override
   bool operator ==(Object o) {
@@ -90,7 +92,7 @@ class _Model extends ReduxUIModel {
   }
 
   @override
-  int get hashCode => counter.hashCode;
+  String toString() => '_Model(counter: $counter)';
 }
 
 class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
@@ -101,7 +103,7 @@ class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
           supervisor: (state) => state.stateModels,
         );
 
-  void increment() => update(model.copyWith(counter: model.counter + 1));
+  void increment() => update(_Model(counter: model.counter + 1));
 
-  void decrement() => update(model.copyWith(counter: model.counter - 1));
+  void decrement() => update(_Model(counter: model.counter - 1));
 }

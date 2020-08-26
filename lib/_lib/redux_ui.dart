@@ -48,15 +48,14 @@ class ReduxUIViewModel<State, Model extends ReduxUIModel> {
         assert(supervisor != null),
         _supervisor = supervisor,
         _stateModel = ReduxUIStateModel(id: model.hashCode, model: model),
-        store = StoreProvider.of<State>(context) {
+        store = StoreProvider.of<State>(context, listen: false) {
     _init();
   }
 
   @nonVirtual
   Model get model {
-    print(store.state);
     return _supervisor(store.state)
-        .firstWhere((m) => m.id == _stateModel.id)
+        .firstWhere((m) => m.id == _stateModel.id, orElse: () => null)
         .model;
   }
 
@@ -121,3 +120,48 @@ class _RemoveModelAction {
 }
 
 class _ClearModelsAction {}
+
+// -------------------------------------------- //
+
+class StoreObserver<State, Model extends ReduxUIModel> extends StatelessWidget {
+  final ReduxUIViewModel<State, Model> viewModel;
+  final ViewModelBuilder<Model> builder;
+  final OnInitCallback<State> onInit;
+  final OnDisposeCallback<State> onDispose;
+  final bool rebuildOnChange;
+  final IgnoreChangeTest<State> ignoreChange;
+  final OnWillChangeCallback<Model> onWillChange;
+  final OnDidChangeCallback<Model> onDidChange;
+  final OnInitialBuildCallback<Model> onInitialBuild;
+
+  const StoreObserver({
+    Key key,
+    @required this.viewModel,
+    @required this.builder,
+    this.onInit,
+    this.onDispose,
+    this.rebuildOnChange = true,
+    this.ignoreChange,
+    this.onWillChange,
+    this.onDidChange,
+    this.onInitialBuild,
+  })  : assert(builder != null),
+        assert(viewModel != null),
+        super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StoreConnector<State, Model>(
+      builder: builder,
+      converter: (_) => viewModel.model,
+      distinct: true,
+      onInit: onInit,
+      onDispose: onDispose,
+      rebuildOnChange: rebuildOnChange,
+      ignoreChange: ignoreChange,
+      onWillChange: onWillChange,
+      onDidChange: onDidChange,
+      onInitialBuild: onInitialBuild,
+    );
+  }
+}
