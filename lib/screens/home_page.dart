@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_redux/flutter_redux.dart';
 
 import 'package:redux_ui/_lib/redux_ui.dart';
 import 'package:redux_ui/redux/app_state.dart';
@@ -36,7 +35,7 @@ class _HomePageState extends State<HomePage> {
       children: <Widget>[
         StoreObserver(
           viewModel: viewModel,
-          builder: (context, model) => Text(
+          builder: (BuildContext context, _Model model) => Text(
             '${model.counter}',
             style: Theme.of(context).textTheme.headline4,
           ),
@@ -54,13 +53,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        StoreObserver(
-          viewModel: viewModel,
-          builder: (context, model) => Text(
-            '${model.counter}',
-            style: Theme.of(context).textTheme.headline4,
-          ),
-        ),
       ],
     );
   }
@@ -68,31 +60,12 @@ class _HomePageState extends State<HomePage> {
 
 class _Model extends ReduxUIModel {
   final int counter;
+  final int counter2;
 
   _Model({
     this.counter = 0,
-  });
-
-  _Model copyWith({
-    int counter,
-  }) {
-    return _Model(
-      counter: counter ?? this.counter,
-    );
-  }
-
-  @override
-  int get hashCode => counter.hashCode;
-
-  @override
-  bool operator ==(Object o) {
-    if (identical(this, o)) return true;
-
-    return o is _Model && o.counter == counter;
-  }
-
-  @override
-  String toString() => '_Model(counter: $counter)';
+    this.counter2,
+  }) : super(equals: [counter, counter2]);
 }
 
 class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
