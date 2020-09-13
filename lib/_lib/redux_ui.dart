@@ -2,61 +2,35 @@ import 'package:flutter/foundation.dart'
     show immutable, listEquals, required, nonVirtual, protected, Key;
 import 'package:flutter/widgets.dart'
     show hashList, Widget, BuildContext, StatelessWidget;
+
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 
 @immutable
 class ReduxUI<State> {
-  static Reducer<Iterable<ReduxUIStateModel>> createStateModelsReducer() {
-    return combineReducers<Iterable<ReduxUIStateModel>>([
-      TypedReducer<Iterable<ReduxUIStateModel>, _AddModelAction>(
+  static Reducer<List<ReduxUIStateModel>> createStateModelsReducer() {
+    return combineReducers<List<ReduxUIStateModel>>([
+      TypedReducer<List<ReduxUIStateModel>, _AddModelAction>(
         (models, action) {
-          if (models is Set<ReduxUIStateModel>) {
-            return {...models, action.stateModel};
-          } else if (models is List<ReduxUIStateModel>) {
-            return [...models, action.stateModel];
-          } else {
-            throw Exception("Type Exception");
-          }
+          return [...models, action.stateModel];
         },
       ),
-      TypedReducer<Iterable<ReduxUIStateModel>, _UpdateModelAction>(
+      TypedReducer<List<ReduxUIStateModel>, _UpdateModelAction>(
         (models, action) {
-          if (models is Set<ReduxUIStateModel>) {
-            return {...models}
-              ..removeWhere((model) => model.id == action.stateModel.id)
-              ..add(action.stateModel);
-          } else if (models is List<ReduxUIStateModel>) {
-            return [...models]
-              ..removeWhere((model) => model.id == action.stateModel.id)
-              ..add(action.stateModel);
-          } else {
-            throw Exception("Type Exception");
-          }
+          return [...models]
+            ..removeWhere((model) => model.id == action.stateModel.id)
+            ..add(action.stateModel);
         },
       ),
-      TypedReducer<Iterable<ReduxUIStateModel>, _RemoveModelAction>(
+      TypedReducer<List<ReduxUIStateModel>, _RemoveModelAction>(
         (models, action) {
-          if (models is Set<ReduxUIStateModel>) {
-            return {...models}
-              ..removeWhere((model) => model.id == action.stateModel.id);
-          } else if (models is List<ReduxUIStateModel>) {
-            return [...models]
-              ..removeWhere((model) => model.id == action.stateModel.id);
-          } else {
-            throw Exception("Type Exception");
-          }
+          return [...models]
+            ..removeWhere((model) => model.id == action.stateModel.id);
         },
       ),
-      TypedReducer<Iterable<ReduxUIStateModel>, _ClearModelsAction>(
+      TypedReducer<List<ReduxUIStateModel>, _ClearModelsAction>(
         (models, action) {
-          if (models is Set<ReduxUIStateModel>) {
-            return {};
-          } else if (models is List<ReduxUIStateModel>) {
-            return [];
-          } else {
-            throw Exception("Type Exception");
-          }
+          return [];
         },
       ),
     ]);
@@ -67,12 +41,12 @@ class ReduxUI<State> {
 
 @immutable
 abstract class ReduxUIModel {
-  final Iterable<Object> equals;
+  final List<Object> equals;
 
   ReduxUIModel({this.equals = const []})
       : assert(_onlyContainFieldsOfAllowedTypes(equals));
 
-  static bool _onlyContainFieldsOfAllowedTypes(Iterable<Object> objects) {
+  static bool _onlyContainFieldsOfAllowedTypes(List<Object> objects) {
     objects.forEach((Object object) {
       if (object is Function) {
         throw Exception(
@@ -101,18 +75,24 @@ abstract class ReduxUIModel {
 
 class ReduxUIViewModel<State, Model extends ReduxUIModel> {
   final ReduxUIStateModel _stateModel;
-  final Iterable<ReduxUIStateModel> Function(State) _supervisor;
+  final List<ReduxUIStateModel> Function(State) _supervisor;
   final Store<State> store;
 
   ReduxUIViewModel({
     @required BuildContext context,
     @required ReduxUIModel model,
-    @required Iterable<ReduxUIStateModel> Function(State) supervisor,
+    @required List<ReduxUIStateModel> Function(State) supervisor,
+    bool unique = true,
   })  : assert(context != null),
         assert(model != null),
         assert(supervisor != null),
         _supervisor = supervisor,
-        _stateModel = ReduxUIStateModel(id: model.hashCode, model: model),
+        _stateModel = ReduxUIStateModel(
+          id: (unique)
+              ? model.hashCode
+              : model.hashCode ^ DateTime.now().hashCode,
+          model: model,
+        ),
         store = StoreProvider.of<State>(context, listen: false) {
     _init();
   }
@@ -138,28 +118,6 @@ class ReduxUIViewModel<State, Model extends ReduxUIModel> {
   void update(Model model) {
     store.dispatch(_UpdateModelAction(_stateModel.copyWith(model: model)));
   }
-}
-
-// -------------------------------------------- //
-
-typedef Func0<R> = R Function();
-
-Func0<R> memo0<R>(Func0<R> func) {
-  R prevResult;
-  bool isInitial = true;
-
-  return (() {
-    if (!isInitial) {
-      print("cached");
-      return prevResult;
-    } else {
-      print("no cached");
-      prevResult = func();
-      isInitial = false;
-
-      return prevResult;
-    }
-  });
 }
 
 // -------------------------------------------- //

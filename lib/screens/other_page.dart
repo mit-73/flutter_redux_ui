@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:redux_ui/_lib/redux_ui.dart';
 import 'package:redux_ui/redux/app_state.dart';
 
-import 'other_page.dart';
+import 'home_page.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({Key key}) : super(key: key);
+class OtherPage extends StatefulWidget {
+  const OtherPage({Key key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _OtherPageState createState() => _OtherPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _OtherPageState extends State<OtherPage> {
   _ViewModel viewModel;
 
   @override
@@ -57,10 +57,10 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           RaisedButton(
-            child: Text("Go to OtherPage"),
+            child: Text("Go to HomePage"),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (BuildContext context) => OtherPage(),
+                builder: (BuildContext context) => HomePage(),
               ),
             ),
           ),
@@ -72,12 +72,10 @@ class _HomePageState extends State<HomePage> {
 
 class _Model extends ReduxUIModel {
   final int counter;
-  final int counter2;
 
   _Model({
-    this.counter = 0,
-    this.counter2,
-  }) : super(equals: [counter, counter2]);
+    this.counter = 222,
+  }) : super(equals: [counter]);
 }
 
 class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
