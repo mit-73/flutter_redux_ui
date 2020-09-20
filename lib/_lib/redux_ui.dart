@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart'
     show immutable, listEquals, required, nonVirtual, protected, Key;
 import 'package:flutter/widgets.dart'
@@ -8,29 +10,30 @@ import 'package:redux/redux.dart';
 
 @immutable
 class ReduxUI<State> {
-  static Reducer<List<ReduxUIStateModel>> createStateModelsReducer() {
-    return combineReducers<List<ReduxUIStateModel>>([
-      TypedReducer<List<ReduxUIStateModel>, _AddModelAction>(
+  static Reducer<ReduxUIStateModel> createStateModelsReducer() {
+    return combineReducers<ReduxUIStateModel>([
+      TypedReducer<ReduxUIStateModel, _AddModelAction>(
         (models, action) {
-          return [...models, action.stateModel];
+          var a = ReduxUIStateModel(models ?? {})
+            ..addAll({action.id: action.stateModel});
+          print(a.runtimeType);
+          return a;
         },
       ),
-      TypedReducer<List<ReduxUIStateModel>, _UpdateModelAction>(
+      TypedReducer<ReduxUIStateModel, _UpdateModelAction>(
         (models, action) {
-          return [...models]
-            ..removeWhere((model) => model.id == action.stateModel.id)
-            ..add(action.stateModel);
+          return ReduxUIStateModel(models ?? {})
+            ..update(action.id, (v) => action.stateModel);
         },
       ),
-      TypedReducer<List<ReduxUIStateModel>, _RemoveModelAction>(
+      TypedReducer<ReduxUIStateModel, _RemoveModelAction>(
         (models, action) {
-          return [...models]
-            ..removeWhere((model) => model.id == action.stateModel.id);
+          return ReduxUIStateModel(models ?? {})..remove(action.stateModel);
         },
       ),
-      TypedReducer<List<ReduxUIStateModel>, _ClearModelsAction>(
+      TypedReducer<ReduxUIStateModel, _ClearModelsAction>(
         (models, action) {
-          return [];
+          return ReduxUIStateModel(models)..clear();
         },
       ),
     ]);
@@ -74,100 +77,109 @@ abstract class ReduxUIModel {
 }
 
 class ReduxUIViewModel<State, Model extends ReduxUIModel> {
-  final ReduxUIStateModel _stateModel;
-  final List<ReduxUIStateModel> Function(State) _supervisor;
+  final int _id;
+  final ReduxUIModel _model;
+  final ReduxUIStateModel Function(State) _supervisor;
   final Store<State> store;
 
   ReduxUIViewModel({
     @required BuildContext context,
     @required ReduxUIModel model,
-    @required List<ReduxUIStateModel> Function(State) supervisor,
+    @required ReduxUIStateModel Function(State) supervisor,
     bool unique = true,
   })  : assert(context != null),
         assert(model != null),
         assert(supervisor != null),
+        _model = model,
+        _id =
+            unique ? model.hashCode : model.hashCode ^ DateTime.now().hashCode,
         _supervisor = supervisor,
-        _stateModel = ReduxUIStateModel(
-          id: (unique)
-              ? model.hashCode
-              : model.hashCode ^ DateTime.now().hashCode,
-          model: model,
-        ),
         store = StoreProvider.of<State>(context, listen: false) {
     _init();
   }
 
   @nonVirtual
   Model get model {
-    return _supervisor(store.state)
-        .firstWhere((m) => m.id == _stateModel.id, orElse: () => null)
-        .model;
+    return _supervisor(store.state)[_id];
   }
 
   void _init() {
-    store.dispatch(_AddModelAction(_stateModel));
+    store.dispatch(_AddModelAction(_id, _model));
   }
 
   @nonVirtual
   void dispose() {
-    store.dispatch(_RemoveModelAction(_stateModel));
+    store.dispatch(_RemoveModelAction(_id, _model));
   }
 
   @protected
   @nonVirtual
   void update(Model model) {
-    store.dispatch(_UpdateModelAction(_stateModel.copyWith(model: model)));
+    store.dispatch(_UpdateModelAction(_id, model));
   }
 }
 
 // -------------------------------------------- //
 
 @immutable
-class ReduxUIStateModel {
-  final int id;
-  final ReduxUIModel model;
+class ReduxUIStateModel
+    with MapMixin<int, ReduxUIModel>
+    implements Map<int, ReduxUIModel> {
+  final Map<int, ReduxUIModel> _map;
 
-  ReduxUIStateModel({
-    this.id,
-    this.model,
-  });
+  const ReduxUIStateModel(Map<int, ReduxUIModel> map) : _map = map;
 
-  ReduxUIStateModel copyWith({
-    int id,
-    ReduxUIModel model,
-  }) {
-    return ReduxUIStateModel(
-      id: id ?? this.id,
-      model: model ?? this.model,
-    );
-  }
+  factory ReduxUIStateModel.from(Map other) =>
+      ReduxUIStateModel(Map.from(other));
+
+  factory ReduxUIStateModel.empty() => ReduxUIStateModel({});
 
   @override
-  String toString() => 'ReduxUIStateModel(id: $id, model: $model)';
+  ReduxUIModel operator [](Object key) => _map[key];
+
+  @override
+  void operator []=(int key, ReduxUIModel value) => _map[key] = value;
+
+  @override
+  void clear() => _map.clear();
+
+  @override
+  Iterable<int> get keys => _map.keys;
+
+  @override
+  ReduxUIModel remove(Object key) => _map.remove(key);
 }
 
+@immutable
 class _AddModelAction {
-  final ReduxUIStateModel stateModel;
+  final int id;
+  final ReduxUIModel stateModel;
 
-  _AddModelAction(this.stateModel);
+  _AddModelAction(this.id, this.stateModel);
 }
 
+@immutable
 class _UpdateModelAction {
-  final ReduxUIStateModel stateModel;
+  final int id;
+  final ReduxUIModel stateModel;
 
-  _UpdateModelAction(this.stateModel);
+  _UpdateModelAction(this.id, this.stateModel);
 }
 
+@immutable
 class _RemoveModelAction {
-  final ReduxUIStateModel stateModel;
+  final int id;
+  final ReduxUIModel stateModel;
 
-  _RemoveModelAction(this.stateModel);
+  _RemoveModelAction(this.id, this.stateModel);
 }
 
+@immutable
 class _ClearModelsAction {}
 
 // -------------------------------------------- //
 
+@immutable
 class StoreObserver<State, Model extends ReduxUIModel> extends StatelessWidget {
   final ReduxUIViewModel<State, Model> viewModel;
   final ViewModelBuilder<Model> builder;
