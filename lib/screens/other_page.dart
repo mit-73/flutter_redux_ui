@@ -36,9 +36,10 @@ class _OtherPageState extends State<OtherPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          StoreObserver(
+          StoreObserver<AppState, _Model>(
             viewModel: viewModel,
-            builder: (BuildContext context, _Model model) => Text(
+            observe: (model) => model.counter,
+            builder: (context, model) => Text(
               '${model.counter}',
               style: Theme.of(context).textTheme.headline4,
             ),

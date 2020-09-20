@@ -14,10 +14,8 @@ class ReduxUI<State> {
     return combineReducers<ReduxUIStateModel>([
       TypedReducer<ReduxUIStateModel, _AddModelAction>(
         (models, action) {
-          var a = ReduxUIStateModel(models ?? {})
+          return ReduxUIStateModel(models ?? {})
             ..addAll({action.id: action.stateModel});
-          print(a.runtimeType);
-          return a;
         },
       ),
       TypedReducer<ReduxUIStateModel, _UpdateModelAction>(
@@ -44,10 +42,11 @@ class ReduxUI<State> {
 
 @immutable
 abstract class ReduxUIModel {
-  final List<Object> equals;
+  final List<Object> _equals;
 
-  ReduxUIModel({this.equals = const []})
-      : assert(_onlyContainFieldsOfAllowedTypes(equals));
+  ReduxUIModel({List<Object> equals = const []})
+      : assert(_onlyContainFieldsOfAllowedTypes(equals)),
+        _equals = equals;
 
   static bool _onlyContainFieldsOfAllowedTypes(List<Object> objects) {
     objects.forEach((Object object) {
@@ -61,7 +60,7 @@ abstract class ReduxUIModel {
   }
 
   @override
-  int get hashCode => runtimeType.hashCode ^ hashList(equals);
+  int get hashCode => runtimeType.hashCode ^ hashList(_equals);
 
   @override
   bool operator ==(Object other) {
@@ -69,32 +68,34 @@ abstract class ReduxUIModel {
 
     return other is ReduxUIModel &&
         runtimeType == other.runtimeType &&
-        listEquals(other.equals, equals);
+        listEquals(other._equals, _equals);
   }
 
   @override
-  String toString() => "RuntimeType: $runtimeType\nEqual Objects: $equals\n";
+  String toString() => "RuntimeType: $runtimeType\nEqual Objects: $_equals\n";
 }
+
+typedef _Supervisor<State> = ReduxUIStateModel Function(State);
 
 class ReduxUIViewModel<State, Model extends ReduxUIModel> {
   final int _id;
   final ReduxUIModel _model;
-  final ReduxUIStateModel Function(State) _supervisor;
+  final _Supervisor<State> _supervisor;
   final Store<State> store;
 
   ReduxUIViewModel({
     @required BuildContext context,
     @required ReduxUIModel model,
-    @required ReduxUIStateModel Function(State) supervisor,
+    @required _Supervisor<State> supervisor,
     bool unique = true,
   })  : assert(context != null),
         assert(model != null),
         assert(supervisor != null),
+        store = StoreProvider.of<State>(context, listen: false),
         _model = model,
         _id =
             unique ? model.hashCode : model.hashCode ^ DateTime.now().hashCode,
-        _supervisor = supervisor,
-        store = StoreProvider.of<State>(context, listen: false) {
+        _supervisor = supervisor {
     _init();
   }
 
@@ -148,6 +149,11 @@ class ReduxUIStateModel
 
   @override
   ReduxUIModel remove(Object key) => _map.remove(key);
+
+  @override
+  String toString() {
+    return _map.toString();
+  }
 }
 
 @immutable
@@ -179,9 +185,12 @@ class _ClearModelsAction {}
 
 // -------------------------------------------- //
 
+typedef _Observe<Model extends ReduxUIModel> = dynamic Function(Model);
+
 @immutable
 class StoreObserver<State, Model extends ReduxUIModel> extends StatelessWidget {
   final ReduxUIViewModel<State, Model> viewModel;
+  final _Observe<Model> observe;
   final ViewModelBuilder<Model> builder;
   final OnInitCallback<State> onInit;
   final OnDisposeCallback<State> onDispose;
@@ -194,6 +203,7 @@ class StoreObserver<State, Model extends ReduxUIModel> extends StatelessWidget {
   const StoreObserver({
     Key key,
     @required this.viewModel,
+    @required this.observe,
     @required this.builder,
     this.onInit,
     this.onDispose,
@@ -210,7 +220,7 @@ class StoreObserver<State, Model extends ReduxUIModel> extends StatelessWidget {
   Widget build(BuildContext context) {
     return StoreConnector<State, Model>(
       builder: builder,
-      converter: (_) => viewModel.model,
+      converter: (_) => viewModel.model, // TODO use observe
       distinct: true,
       onInit: onInit,
       onDispose: onDispose,

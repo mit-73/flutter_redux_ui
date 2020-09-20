@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:redux_ui/_lib/redux_ui.dart';
+import 'package:redux_ui/main.dart';
 import 'package:redux_ui/redux/app_state.dart';
 
 import 'other_page.dart';
@@ -36,23 +37,46 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          StoreObserver(
+          StoreObserver<AppState, _Model>(
             viewModel: viewModel,
-            builder: (BuildContext context, _Model model) => Text(
-              '${model.counter}',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            observe: (model) => model.counter1,
+            builder: (context, model) {
+              print("rebuild 1");
+              return Text(
+                '${model.counter1} (1)',
+                style: Theme.of(context).textTheme.headline4,
+              );
+            },
+          ),
+          StoreObserver<AppState, _Model>(
+            viewModel: viewModel,
+            observe: (model) => model.counter2,
+            builder: (context, model) {
+              print("rebuild 2");
+              return Text(
+                '${model.counter2} (2)',
+                style: Theme.of(context).textTheme.headline4,
+              );
+            },
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
               RaisedButton(
-                child: Text("+"),
-                onPressed: viewModel.increment,
+                child: Text("+ (1)"),
+                onPressed: viewModel.increment1,
               ),
               RaisedButton(
-                child: Text("-"),
-                onPressed: viewModel.decrement,
+                child: Text("- (1)"),
+                onPressed: viewModel.decrement1,
+              ),
+              RaisedButton(
+                child: Text("+ (2)"),
+                onPressed: viewModel.increment2,
+              ),
+              RaisedButton(
+                child: Text("- (2)"),
+                onPressed: viewModel.decrement2,
               ),
             ],
           ),
@@ -71,13 +95,13 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _Model extends ReduxUIModel {
-  final int counter;
+  final int counter1;
   final int counter2;
 
   _Model({
-    this.counter = 0,
-    this.counter2,
-  }) : super(equals: [counter, counter2]);
+    this.counter1 = 0,
+    this.counter2 = 0,
+  }) : super(equals: [counter1, counter2]);
 }
 
 class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
@@ -89,7 +113,11 @@ class _ViewModel extends ReduxUIViewModel<AppState, _Model> {
           unique: false,
         );
 
-  void increment() => update(_Model(counter: model.counter + 1));
+  void increment1() => update(_Model(counter1: model.counter1 + 1));
 
-  void decrement() => update(_Model(counter: model.counter - 1));
+  void decrement1() => update(_Model(counter1: model.counter1 - 1));
+
+  void increment2() => update(_Model(counter2: model.counter2 + 1));
+
+  void decrement2() => update(_Model(counter2: model.counter2 - 1));
 }
