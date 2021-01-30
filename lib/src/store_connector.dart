@@ -1,4 +1,4 @@
-part of 'store.dart';
+part of 'redux_ui.dart';
 
 /// {@template store_connector}
 /// Create a [StoreConnector] by passing in the required [converter] and

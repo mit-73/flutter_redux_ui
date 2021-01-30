@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
         children: <Widget>[
           StoreObserver<AppState, _Model>(
             viewModel: viewModel,
-            observe: (model) => model.counter,
+            // observe: (model, _) => model.counter,
             builder: (context, model) {
               print("rebuild 1");
               return Text(
@@ -52,7 +52,7 @@ class _HomePageState extends State<HomePage> {
           ),
           StoreObserver<AppState, _Model>(
             viewModel: viewModel2,
-            observe: (model) => model.counter,
+            // observe: (model, _) => model.counter,
             builder: (context, model) {
               print("rebuild 2");
               return Text(
@@ -119,10 +119,9 @@ class _Model extends Model {
 class _ViewModel extends ViewModel<AppState, _Model> {
   _ViewModel(Store<AppState> store)
       : super(
+          _Model(),
           store: store,
-          model: _Model(),
           supervisor: (state) => state.viewModelStates,
-          unique: true, // TODO unique problem
         );
 
   void increment() => update(model.copyWith(counter: model.counter + 1));

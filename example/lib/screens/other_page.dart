@@ -38,7 +38,7 @@ class _OtherPageState extends State<OtherPage> {
         children: <Widget>[
           StoreObserver<AppState, _Model>(
             viewModel: viewModel,
-            observe: (model) => model.counter,
+            // observe: (model, _) => model.counter,
             builder: (context, model) {
               return Text(
                 '${model.counter} (local)',
@@ -48,10 +48,10 @@ class _OtherPageState extends State<OtherPage> {
           ),
           StoreObserver<AppState, _Model>(
             viewModel: viewModel,
-            observe: (model) => model.counterStore,
+            // observe: (_, state) => state.counter,
             builder: (context, model) {
               return Text(
-                '${model.counterStore} (store)',
+                '${model.counter} (store)',
                 style: Theme.of(context).textTheme.headline4,
               );
             },
@@ -89,15 +89,13 @@ class _OtherPageState extends State<OtherPage> {
 
 class _Model extends Model {
   final int counter;
-  final int counterStore; // TODO update problem
 
   _Model({
     this.counter = 0,
-    this.counterStore,
   });
 
   @override
-  List<Object> get equals => [counter, counterStore];
+  List<Object> get equals => [counter];
 
   @override
   _Model copyWith({
@@ -106,7 +104,6 @@ class _Model extends Model {
   }) {
     return _Model(
       counter: counter ?? this.counter,
-      counterStore: counterStore ?? this.counterStore,
     );
   }
 }
@@ -115,8 +112,8 @@ class _ViewModel extends ViewModel<AppState, _Model> {
   final Store<AppState> store;
   _ViewModel(this.store)
       : super(
+          _Model(),
           store: store,
-          model: _Model(counterStore: store.state.counter),
           supervisor: (state) => state.viewModelStates,
           unique: true,
         );

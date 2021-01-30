@@ -1,4 +1,4 @@
-part of 'store.dart';
+part of 'redux_ui.dart';
 
 /// Build a Widget using the [BuildContext] and [ViewModel]. The [ViewModel] is
 /// derived from the [Store] using a [StoreConverter].

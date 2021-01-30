@@ -1,4 +1,4 @@
-part of 'store.dart';
+part of 'redux_ui.dart';
 
 /// {@template store_provider}
 /// Create a [StoreProvider] by passing in the required [store] and [child]

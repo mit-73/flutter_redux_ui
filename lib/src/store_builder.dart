@@ -1,4 +1,4 @@
-part of 'store.dart';
+part of 'redux_ui.dart';
 
 /// {@template store_builder}
 /// Build a Widget by passing the [Store] directly to the build function.
