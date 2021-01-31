@@ -1,36 +1,52 @@
 part of 'redux_ui.dart';
 
-/// Build a Widget using the [BuildContext] and [ViewModel]. The [ViewModel] is
-/// derived from the [Store] using a [StoreConverter].
+/// {@template view_model_builder}
+/// Build a Widget using the [BuildContext] and [ViewModel]. The [ViewModel]
+/// is created by the [converter] function.
+/// {@endtemplate}
 typedef ViewModelBuilder<ViewModel> = Widget Function(
   BuildContext context,
   ViewModel vm,
 );
 
+/// {@template view_model_condition}
+/// Signature for the `buildWhen` function which takes the previous [ViewModel] and
+/// the current [ViewModel] and is responsible for returning a [bool] which
+/// determines whether to rebuild Widget with the current [ViewModel].
+/// {@endtemplate}
+typedef ViewModelCondition<ViewModel> = bool Function(ViewModel previous, ViewModel current);
+
+/// {@template store_converter}
 /// Convert the entire [Store] into a [ViewModel]. The [ViewModel] will be used
 /// to build a Widget using the [ViewModelBuilder].
+/// {@endtemplate}
 typedef StoreConverter<S, ViewModel> = ViewModel Function(
   Store<S> store,
 );
 
-/// A function that will be run when the [StoreConnector] is initialized (using
+/// {@template on_init_callback}
+/// A function that will be run when the Widget is initialized (using
 /// the [State.initState] method). This can be useful for dispatching actions
 /// that fetch data for your Widget when it is first displayed.
+/// {@endtemplate}
 typedef OnInitCallback<S> = void Function(
   Store<S> store,
 );
 
-/// A function that will be run when the StoreConnector is removed from the
+/// {@template on_dispose_callback}
+/// A function that will be run when the Widget is removed from the
 /// Widget Tree.
 ///
 /// It is run in the [State.dispose] method.
 ///
 /// This can be useful for dispatching actions that remove stale data from
 /// your State tree.
+/// {@endtemplate}
 typedef OnDisposeCallback<S> = void Function(
   Store<S> store,
 );
 
+/// {@template ignore_change_test}
 /// A test of whether or not your `converter` function should run in response
 /// to a State change. For advanced use only.
 ///
@@ -45,8 +61,10 @@ typedef OnDisposeCallback<S> = void Function(
 /// If you ignore a change, and the framework needs to rebuild the Widget, the
 /// `builder` function will be called with the latest `ViewModel` produced by
 /// your `converter` function.
+/// {@endtemplate}
 typedef IgnoreChangeTest<S> = bool Function(S state);
 
+/// {@template on_will_change_callback}
 /// A function that will be run on State change, before the build method.
 ///
 /// This function is passed the `ViewModel`, and if `distinct` is `true`,
@@ -56,11 +74,13 @@ typedef IgnoreChangeTest<S> = bool Function(S state);
 /// `Navigator` or `TabController`, in response to state changes.
 /// It can also be used to trigger an action based on the previous
 /// state.
+/// {@endtemplate}
 typedef OnWillChangeCallback<ViewModel> = void Function(
   ViewModel previousViewModel,
   ViewModel newViewModel,
 );
 
+/// {@template on_did_change_callback}
 /// A function that will be run on State change, after the build method.
 ///
 /// This function is passed the `ViewModel`, and if `distinct` is `true`,
@@ -72,8 +92,10 @@ typedef OnWillChangeCallback<ViewModel> = void Function(
 /// Note: Using a [BuildContext] inside this callback can cause problems if
 /// the callback performs navigation. For navigation purposes, please use
 /// an [OnWillChangeCallback].
+/// {@endtemplate}
 typedef OnDidChangeCallback<ViewModel> = void Function(ViewModel viewModel);
 
+/// {@template on_initial_build_callback}
 /// A function that will be run after the Widget is built the first time.
 ///
 /// This function is passed the initial `ViewModel` created by the `converter`
@@ -81,27 +103,60 @@ typedef OnDidChangeCallback<ViewModel> = void Function(ViewModel viewModel);
 ///
 /// This can be useful for starting certain animations, such as showing
 /// Snackbars, after the Widget is built the first time.
+/// {@endtemplate}
 typedef OnInitialBuildCallback<ViewModel> = void Function(ViewModel viewModel);
 
 /// Listens to the [Store] and calls [builder] whenever [store] changes.
-class _StoreStreamListener<S, ViewModel> extends StatefulWidget {
+class _StoreListener<S, ViewModel> extends StatefulWidget {
+  /// {@macro view_model_builder}
   final ViewModelBuilder<ViewModel> builder;
+
+  /// {@macro view_model_condition}
+  final ViewModelCondition<ViewModel> buildWhen;
+
+  /// {@macro store_converter}
   final StoreConverter<S, ViewModel> converter;
+
   final Store<S> store;
+
+  /// {@template rebuild_on_change}
+  /// Determines whether the Widget should be rebuilt when the Store emits an
+  /// onChange event.
+  /// {@endtemplate}
   final bool rebuildOnChange;
+
+  /// {@template distinct}
+  /// As a performance optimization, the Widget can be rebuilt only when the
+  /// [ViewModel] changes. In order for this to work correctly, you must
+  /// implement [==] and [hashCode] for the [ViewModel], and set the [distinct]
+  /// option to true when creating your StoreConnector.
+  /// {@endtemplate}
   final bool distinct;
+
+  /// {@macro on_init_callback}
   final OnInitCallback<S> onInit;
+
+  /// {@macro on_dispose_callback}
   final OnDisposeCallback<S> onDispose;
+
+  /// {@macro ignore_change_test}
   final IgnoreChangeTest<S> ignoreChange;
+
+  /// {@macro on_will_change_callback}
   final OnWillChangeCallback<ViewModel> onWillChange;
+
+  /// {@macro on_did_change_callback}
   final OnDidChangeCallback<ViewModel> onDidChange;
+
+  /// {@macro on_initial_build_callback}
   final OnInitialBuildCallback<ViewModel> onInitialBuild;
 
-  const _StoreStreamListener({
+  const _StoreListener({
     Key key,
     @required this.builder,
     @required this.store,
     @required this.converter,
+    this.buildWhen,
     this.distinct = false,
     this.onInit,
     this.onDispose,
@@ -114,11 +169,11 @@ class _StoreStreamListener<S, ViewModel> extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return _StoreStreamListenerState<S, ViewModel>();
+    return _StoreListenerState<S, ViewModel>();
   }
 }
 
-class _StoreStreamListenerState<S, ViewModel> extends State<_StoreStreamListener<S, ViewModel>> {
+class _StoreListenerState<S, ViewModel> extends State<_StoreListener<S, ViewModel>> {
   Stream<ViewModel> _stream;
   S _lastConvertedState;
   ViewModel _latestViewModel;
@@ -144,7 +199,7 @@ class _StoreStreamListenerState<S, ViewModel> extends State<_StoreStreamListener
   }
 
   @override
-  void didUpdateWidget(_StoreStreamListener<S, ViewModel> oldWidget) {
+  void didUpdateWidget(_StoreListener<S, ViewModel> oldWidget) {
     _computeLatestValue();
 
     if (widget.store != oldWidget.store) {
@@ -197,6 +252,7 @@ class _StoreStreamListenerState<S, ViewModel> extends State<_StoreStreamListener
         .where(_stateChanged)
         .where(_ignoreChange)
         .map(_mapConverter)
+        .where(_buildWhen)
         // Don't use `Stream.distinct` because it cannot capture the initial
         // ViewModel produced by the `converter`.
         .where(_whereDistinct)
@@ -222,6 +278,14 @@ class _StoreStreamListenerState<S, ViewModel> extends State<_StoreStreamListener
 
   ViewModel _mapConverter(S state) {
     return widget.converter(widget.store);
+  }
+
+  bool _buildWhen(ViewModel vm) {
+    if (widget.buildWhen != null) {
+      return widget.buildWhen(_latestViewModel, vm);
+    }
+
+    return true;
   }
 
   bool _whereDistinct(ViewModel vm) {
@@ -261,9 +325,9 @@ class _StoreStreamListenerState<S, ViewModel> extends State<_StoreStreamListener
   }
 }
 
-/// If the StoreConnector throws an error,
+/// If the Widget throws an error,
 class ConverterError extends Error {
-  /// The error thrown while running the [StoreConnector.converter] function
+  /// The error thrown while running the [StoreConverter] function
   final Object error;
 
   /// The stacktrace that accompanies the [error]

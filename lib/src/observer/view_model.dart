@@ -2,24 +2,25 @@ part of 'observer.dart';
 
 typedef Supervisor<State> = ViewModelStates Function(State);
 
+mixin ViewModelMixin<S, M extends Model> on ViewModel<S, M> {}
+
 class ViewModel<S, M extends Model> {
   final int _id;
   final Model _model;
   final Supervisor<S> _supervisor;
-  @protected
   final Store<S> _store;
 
   ViewModel(
     Model model, {
     @required Store<S> store,
     @required Supervisor<S> supervisor,
-    bool unique = true,
+    bool unique = false,
   })  : assert(store != null),
         assert(model != null),
         assert(supervisor != null),
         _store = store,
         _model = model,
-        _id = unique ? model.hashCode : model.hashCode ^ DateTime.now().millisecondsSinceEpoch,
+        _id = unique ? model.hashCode ^ fastRand : model.hashCode,
         _supervisor = supervisor {
     _init();
   }

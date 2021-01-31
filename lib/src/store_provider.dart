@@ -55,7 +55,7 @@ class StoreProvider<S> extends StatelessWidget {
   ///
   /// {@template store_provider_watch_example}
   ///
-  /// ### Example
+  /// ### Example Use:
   ///
   /// ```
   /// class MyWidget extends StatelessWidget {
@@ -75,7 +75,7 @@ class StoreProvider<S> extends StatelessWidget {
   /// 
   /// {@template store_provider_read_example}
   ///
-  /// ### Example
+  /// ### Example Use:
   ///
   /// ```
   /// class MyWidget extends StatefulWidget {
@@ -158,10 +158,12 @@ extension StoreProviderExtension on BuildContext {
   ///
   /// ```dart
   /// StoreProvider.of<S>(context)
+  /// // or
+  /// context.watch<Store<AppState>>()
   /// ```
   /// 
   /// {@macro store_provider_watch_example}
-  Store<S> watch<S>() => StoreProvider.of<S>(this);
+  Store<S> watchStore<S>() => StoreProvider.of<S>(this);
 
   /// Performs a lookup using the `BuildContext` to obtain
   /// the nearest ancestor `State` of type [S].
@@ -170,8 +172,10 @@ extension StoreProviderExtension on BuildContext {
   ///
   /// ```dart
   /// StoreProvider.of<S>(context, listen: false)
+  /// // or
+  /// context.read<Store<AppState>>()
   /// ```
   /// 
   /// {@macro store_provider_read_example}
-  Store<S> read<S>() => StoreProvider.of<S>(this, listen: false);
+  Store<S> readStore<S>() => StoreProvider.of<S>(this, listen: false);
 }

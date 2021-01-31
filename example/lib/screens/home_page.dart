@@ -18,8 +18,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    viewModel = _ViewModel(context.read<AppState>());
-    viewModel2 = _ViewModel(context.read<AppState>());
+    viewModel = _ViewModel(context.read<Store<AppState>>());
+    viewModel2 = _ViewModel(context.readStore<AppState>());
 
     super.initState();
   }
@@ -45,18 +45,7 @@ class _HomePageState extends State<HomePage> {
             builder: (context, model) {
               print("rebuild 1");
               return Text(
-                '${model.counter} (1)',
-                style: Theme.of(context).textTheme.headline4,
-              );
-            },
-          ),
-          StoreObserver<AppState, _Model>(
-            viewModel: viewModel2,
-            // observe: (model, _) => model.counter,
-            builder: (context, model) {
-              print("rebuild 2");
-              return Text(
-                '${model.counter} (2)',
+                '${model.counter} (VM 1)',
                 style: Theme.of(context).textTheme.headline4,
               );
             },
@@ -65,23 +54,41 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
               RaisedButton(
-                child: Text("+ (1)"),
+                child: Text("+"),
                 onPressed: viewModel.increment,
               ),
               RaisedButton(
-                child: Text("- (1)"),
+                child: Text("-"),
                 onPressed: viewModel.decrement,
               ),
+            ],
+          ),
+          Divider(),
+          StoreObserver<AppState, _Model>(
+            viewModel: viewModel2,
+            // observe: (model, _) => model.counter,
+            builder: (context, model) {
+              print("rebuild 2");
+              return Text(
+                '${model.counter} (VM 2)',
+                style: Theme.of(context).textTheme.headline4,
+              );
+            },
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
               RaisedButton(
-                child: Text("+ (2)"),
+                child: Text("+"),
                 onPressed: viewModel2.increment,
               ),
               RaisedButton(
-                child: Text("- (2)"),
+                child: Text("-"),
                 onPressed: viewModel2.decrement,
               ),
             ],
           ),
+          Divider(),
           RaisedButton(
             child: Text("Go to OtherPage"),
             onPressed: () => Navigator.of(context).push(
@@ -122,6 +129,7 @@ class _ViewModel extends ViewModel<AppState, _Model> {
           _Model(),
           store: store,
           supervisor: (state) => state.viewModelStates,
+          unique: true,
         );
 
   void increment() => update(model.copyWith(counter: model.counter + 1));
